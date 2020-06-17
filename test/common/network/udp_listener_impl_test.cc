@@ -450,7 +450,7 @@ TEST_P(UdpListenerImplTest, UdpGroBasic) {
     std::cout << "YUGANT: msg_iovlen is: " << msg->msg_iovlen << std::endl;
     std::cout << "YUGANT: msg_controllen is: " << msg->msg_controllen << std::endl;
 
-    // Set msg_name and namelen
+    // Set msg_name and msg_namelen
     sockaddr_storage ss;
     auto ipv4_addr = reinterpret_cast<sockaddr_in*>(&ss);
     memset(ipv4_addr, 0, sizeof(sockaddr_in));

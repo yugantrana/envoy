@@ -202,6 +202,7 @@ NONCES
 NOSORT
 NS
 NUL
+NXTHDR
 Nilsson
 Nonhashable
 OCSP
@@ -350,6 +351,7 @@ XN
 XNOR
 XSS
 YAML
+YUGANT
 ZXID
 absl
 accesslog
@@ -444,6 +446,7 @@ canonicalizer
 canonicalizing
 cardinality
 casted
+cbuf
 charset
 checksum
 chrono
@@ -557,6 +560,7 @@ enablement
 encodings
 endian
 endianness
+endif
 endl
 enqueue
 enqueued
@@ -652,6 +656,8 @@ idx
 ifdef
 iff
 ified
+ifindex
+ifndef
 impl
 implementors
 impls
@@ -673,6 +679,7 @@ ints
 invariance
 iovec
 iovecs
+ipi
 ips
 iptables
 ish
@@ -768,6 +775,7 @@ mutexes
 mux
 muxed
 mysql
+namelen
 nameserver
 namespace
 namespaces
