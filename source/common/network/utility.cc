@@ -559,12 +559,12 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
                                                 UdpPacketProcessor& udp_packet_processor,
                                                 MonotonicTime receive_time,
                                                 uint32_t* packets_dropped) {
-  
+
   // TODO(yugant)
-  std::cout<<"YUGANT RANA: readFromSocket called" << std::endl;
-  
+  std::cout << "YUGANT RANA: readFromSocket called" << std::endl;
+
   if (handle.supportsUdpGro()) {
-    std::cout<<"RANA YUGANT: supportsGRO IS True" << std::endl;
+    std::cout << "RANA YUGANT: supportsGRO IS True" << std::endl;
 
     Buffer::InstancePtr buffer = std::make_unique<Buffer::OwnedImpl>();
     Buffer::RawSlice slice;
@@ -585,9 +585,9 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
 
     ENVOY_LOG_MISC(trace, "recvmsg bytes {}", result.rc_);
 
-    std::cout<<"YUGANT: gso_size read is:" << output.msg_[0].gso_size_ << std::endl;
-    std::cout<<"YUGANT: slice.mem_ is:" << slice.mem_ << std::endl;
-    std::cout<<"YUGANT: buffer is:" << buffer->toString() << std::endl;
+    std::cout << "YUGANT: gso_size read is:" << output.msg_[0].gso_size_ << std::endl;
+    std::cout << "YUGANT: slice.mem_ is:" << slice.mem_ << std::endl;
+    std::cout << "YUGANT: buffer is:" << buffer->toString() << std::endl;
 
     // Get gso_size
     if (output.msg_[0].gso_size_ == 0u) {
@@ -600,28 +600,27 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
       return result;
     }
 
-    std::cout<<"YUGANT: slice is:" << *reinterpret_cast<char *>(slice.mem_) << std::endl;
+    std::cout << "YUGANT: slice is:" << *reinterpret_cast<char*>(slice.mem_) << std::endl;
 
     // Segment the buffer into gso_sized buffers
     for (uint64_t bytes_to_skip = 0; bytes_to_skip < (slice.len_);
          bytes_to_skip += output.msg_[0].gso_size_) {
-      
+
       Buffer::InstancePtr sub_buffer = std::make_unique<Buffer::OwnedImpl>();
       Buffer::RawSlice sub_slice;
-      const uint64_t num_slices =
-          sub_buffer->reserve(maxPacketSizeWithGro, &sub_slice, 1);
+      const uint64_t num_slices = sub_buffer->reserve(maxPacketSizeWithGro, &sub_slice, 1);
       ASSERT(num_slices == 1u);
 
-      std::cout<<"YUGANT: THIS WAS IN" << std::endl;
-      std::cout<<"YUGANT: sub_slice.mem_ is:" << sub_slice.mem_ << std::endl;
+      std::cout << "YUGANT: THIS WAS IN" << std::endl;
+      std::cout << "YUGANT: sub_slice.mem_ is:" << sub_slice.mem_ << std::endl;
       // YUGANT: Should try to remove the copy, maybe change passPayloadToProcessor
-      memcpy( sub_slice.mem_, static_cast<char*>(slice.mem_) + bytes_to_skip, 
-              output.msg_[0].gso_size_); // copy contents of slice[i:i+gso_size] to new_slice;
+      memcpy(sub_slice.mem_, static_cast<char*>(slice.mem_) + bytes_to_skip,
+             output.msg_[0].gso_size_); // copy contents of slice[i:i+gso_size] to new_slice;
 
-      std::cout<<"YUGANT: THIS WAS OUT" << std::endl;
-      
+      std::cout << "YUGANT: THIS WAS OUT" << std::endl;
+
       if (output.msg_[0].local_address_ == nullptr) {
-        std::cout<<"YUGANT: Still NULL" << std::endl;
+        std::cout << "YUGANT: Still NULL" << std::endl;
       }
 
       passPayloadToProcessor(
@@ -631,7 +630,7 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
 
     return result;
   } else {
-    std::cout<<"RANA YUGANT: supportsGRO IS False" << std::endl;
+    std::cout << "RANA YUGANT: supportsGRO IS False" << std::endl;
   }
 
   if (handle.supportsMmsg()) {

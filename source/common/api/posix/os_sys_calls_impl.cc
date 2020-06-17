@@ -9,7 +9,7 @@
 #include "common/api/os_sys_calls_impl.h"
 
 // #include "server/backtrace.h"   // YUGANT, for debug remove later
-#include <iostream>   // YUGANT remove
+#include <iostream> // YUGANT remove
 
 namespace Envoy {
 namespace Api {
@@ -109,7 +109,8 @@ SysCallIntResult OsSysCallsImpl::setsockopt(os_fd_t sockfd, int level, int optna
   if (optname == GRO_UDP) {
     // BACKTRACE_LOG();
     std::cout << "YUGANT OS: level is " << level << " optname is " << optname << std::endl;
-    std::cout << "YUGANT OS: rc is " << rc << " sockfd is " << sockfd << " optval is " << *reinterpret_cast<const int*>(optval) << std::endl;
+    std::cout << "YUGANT OS: rc is " << rc << " sockfd is " << sockfd << " optval is "
+              << *reinterpret_cast<const int*>(optval) << std::endl;
   }
   return {rc, rc != -1 ? 0 : errno};
 }

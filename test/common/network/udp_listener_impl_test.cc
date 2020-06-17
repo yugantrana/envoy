@@ -1,14 +1,15 @@
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 #include <cstddef>
 #include <iostream>
 #include <memory>
-#include <netinet/in.h>
 #include <string>
-#include <sys/socket.h>
 #include <vector>
 
-#include "common/api/os_sys_calls_impl.h"
 #include "envoy/config/core/v3/base.pb.h"
 
+#include "common/api/os_sys_calls_impl.h"
 #include "common/network/address_impl.h"
 #include "common/network/socket_option_factory.h"
 #include "common/network/socket_option_impl.h"
@@ -93,7 +94,7 @@ protected:
     EXPECT_EQ(data.addresses_.local_->asString(), send_to_addr_->asString());
 
     EXPECT_EQ(data.addresses_.peer_->ip()->addressAsString(),
-             client_.localAddress()->ip()->addressAsString());
+              client_.localAddress()->ip()->addressAsString());
 
     EXPECT_EQ(*data.addresses_.local_, *send_to_addr_);
 
@@ -189,7 +190,7 @@ TEST_P(UdpListenerImplTest, UseActualDstUdp) {
 /**
  * Tests UDP listener for read and write callbacks with actual data.
  */
-TEST_P(UdpListenerImplTest, UdpEcho) { 
+TEST_P(UdpListenerImplTest, UdpEcho) {
   // We send 17 packets and expect it to echo.
   absl::FixedArray<std::string> client_data({"first", "second", "third", "forth", "fifth", "sixth",
                                              "seventh", "eighth", "ninth", "tenth", "eleventh",
@@ -260,7 +261,6 @@ TEST_P(UdpListenerImplTest, UdpEcho) {
   }));
 
   dispatcher_->run(Event::Dispatcher::RunType::Block);
-
 }
 
 /**
@@ -422,16 +422,16 @@ TEST_P(UdpListenerImplTest, SendDataError) {
 }
 
 /**
-* Enable UDP_GRO and test if the packets received are handled correctly
-*/
+ * Enable UDP_GRO and test if the packets received are handled correctly
+ */
 TEST_P(UdpListenerImplTest, UdpGroBasic) {
   // We send 17 packets and expect it to echo.
   absl::FixedArray<std::string> client_data({"first", "secon", "third"});
-  
+
   for (const auto& i : client_data) {
     client_.write(i, *send_to_addr_);
   }
-  
+
   // For unit test purposes, we assume that the data was received in order.
   Address::InstanceConstSharedPtr test_peer_address;
 
@@ -444,67 +444,66 @@ TEST_P(UdpListenerImplTest, UdpGroBasic) {
   // Set supportsUdpGro to be set as True for all returns.
   EXPECT_CALL(os_sys_calls, supportsUdpGro).WillRepeatedly(Return(true));
   EXPECT_CALL(os_sys_calls, supportsMmsg).Times(0);
-  
-  EXPECT_CALL(os_sys_calls, recvmsg(_, _, _)).
-      WillRepeatedly(Invoke([](os_fd_t, msghdr* msg, int) {
-        std::cout << "YUGANT: Mocked Recvmsg Called" << std::endl;
-        std::cout << "YUGANT: msg_iovlen is: " << msg->msg_iovlen << std::endl;
-        std::cout << "YUGANT: msg_controllen is: " << msg->msg_controllen << std::endl;
 
-        // Set msg_name and namelen
-        sockaddr_storage ss;
-        auto ipv4_addr = reinterpret_cast<sockaddr_in*>(&ss);
-        memset(ipv4_addr, 0, sizeof(sockaddr_in));
-        ipv4_addr->sin_family = AF_INET;
-        ipv4_addr->sin_addr.s_addr = INADDR_LOOPBACK;
-        ipv4_addr->sin_port = htons(54321);
-        *reinterpret_cast<sockaddr_in*>(msg->msg_name) = *ipv4_addr;
-        msg->msg_namelen = sizeof(sockaddr_in);
-        
-        // Set the iovecs to carry the data
-        const uint64_t size_of_payload = 4500;
-        auto slice = Buffer::OwnedSlice::create(size_of_payload);
-        EXPECT_NE(nullptr, slice->data());
-        EXPECT_EQ(0, slice->dataSize());
-        EXPECT_LE(size_of_payload, slice->reservableSize());
+  EXPECT_CALL(os_sys_calls, recvmsg(_, _, _)).WillRepeatedly(Invoke([](os_fd_t, msghdr* msg, int) {
+    std::cout << "YUGANT: Mocked Recvmsg Called" << std::endl;
+    std::cout << "YUGANT: msg_iovlen is: " << msg->msg_iovlen << std::endl;
+    std::cout << "YUGANT: msg_controllen is: " << msg->msg_controllen << std::endl;
 
-        absl::FixedArray<iovec> iov(msg->msg_iovlen);
-        iov[0].iov_base = slice->data();
-        iov[0].iov_len = slice->dataSize();
-        msg->msg_iov = iov.begin();
+    // Set msg_name and namelen
+    sockaddr_storage ss;
+    auto ipv4_addr = reinterpret_cast<sockaddr_in*>(&ss);
+    memset(ipv4_addr, 0, sizeof(sockaddr_in));
+    ipv4_addr->sin_family = AF_INET;
+    ipv4_addr->sin_addr.s_addr = INADDR_LOOPBACK;
+    ipv4_addr->sin_port = htons(54321);
+    *reinterpret_cast<sockaddr_in*>(msg->msg_name) = *ipv4_addr;
+    msg->msg_namelen = sizeof(sockaddr_in);
 
-        // Populate cbuf
-        const size_t cmsg_space = CMSG_SPACE(msg->msg_controllen);
-        std::cout << "YUGANT: cmsg_space is: " << cmsg_space << std::endl;
-        
-        absl::FixedArray<char> cbuf(cmsg_space);
-        memset(cbuf.begin(), 0, cmsg_space);
-        msg->msg_control = cbuf.begin();
-        msg->msg_controllen = cmsg_space * sizeof(char);
-        cmsghdr* cmsg = CMSG_FIRSTHDR(msg);
-        
-        // cmsg->cmsg_level = IPPROTO_IP;
-        // #ifndef IP_SENDSRCADDR
-        // cmsg->cmsg_len = CMSG_LEN(sizeof(in_pktinfo));
-        // cmsg->cmsg_type = IP_PKTINFO;
-        // auto pktinfo = reinterpret_cast<in_pktinfo*>(CMSG_DATA(cmsg));
-        // pktinfo->ipi_ifindex = 0;
-        // pktinfo->ipi_spec_dst.s_addr = self_ip->ipv4()->address();
-        // #else
-        // cmsg->cmsg_type = IP_SENDSRCADDR;
-        // cmsg->cmsg_len = CMSG_LEN(sizeof(in_addr));
-        // *(reinterpret_cast<struct in_addr*>(CMSG_DATA(cmsg))).s_addr = self_ip->ipv4()->address();
-        // #endif
-        // cmsg = CMSG_NXTHDR(msg, cmsg);
+    // Set the iovecs to carry the data
+    const uint64_t size_of_payload = 4500;
+    auto slice = Buffer::OwnedSlice::create(size_of_payload);
+    EXPECT_NE(nullptr, slice->data());
+    EXPECT_EQ(0, slice->dataSize());
+    EXPECT_LE(size_of_payload, slice->reservableSize());
 
-        cmsg->cmsg_level = SOL_UDP;
-        cmsg->cmsg_type = GRO_UDP;
-        cmsg->cmsg_len = CMSG_LEN(sizeof(uint16_t));
-        const uint64_t gso_size = 1500;
-        *reinterpret_cast<uint16_t*>(CMSG_DATA(cmsg)) = gso_size;
-      
-        return Api::SysCallSizeResult{4500u, 0};
-      }));
+    absl::FixedArray<iovec> iov(msg->msg_iovlen);
+    iov[0].iov_base = slice->data();
+    iov[0].iov_len = slice->dataSize();
+    msg->msg_iov = iov.begin();
+
+    // Populate cbuf
+    const size_t cmsg_space = CMSG_SPACE(msg->msg_controllen);
+    std::cout << "YUGANT: cmsg_space is: " << cmsg_space << std::endl;
+
+    absl::FixedArray<char> cbuf(cmsg_space);
+    memset(cbuf.begin(), 0, cmsg_space);
+    msg->msg_control = cbuf.begin();
+    msg->msg_controllen = cmsg_space * sizeof(char);
+    cmsghdr* cmsg = CMSG_FIRSTHDR(msg);
+
+    // cmsg->cmsg_level = IPPROTO_IP;
+    // #ifndef IP_SENDSRCADDR
+    // cmsg->cmsg_len = CMSG_LEN(sizeof(in_pktinfo));
+    // cmsg->cmsg_type = IP_PKTINFO;
+    // auto pktinfo = reinterpret_cast<in_pktinfo*>(CMSG_DATA(cmsg));
+    // pktinfo->ipi_ifindex = 0;
+    // pktinfo->ipi_spec_dst.s_addr = self_ip->ipv4()->address();
+    // #else
+    // cmsg->cmsg_type = IP_SENDSRCADDR;
+    // cmsg->cmsg_len = CMSG_LEN(sizeof(in_addr));
+    // *(reinterpret_cast<struct in_addr*>(CMSG_DATA(cmsg))).s_addr = self_ip->ipv4()->address();
+    // #endif
+    // cmsg = CMSG_NXTHDR(msg, cmsg);
+
+    cmsg->cmsg_level = SOL_UDP;
+    cmsg->cmsg_type = GRO_UDP;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(uint16_t));
+    const uint64_t gso_size = 1500;
+    *reinterpret_cast<uint16_t*>(CMSG_DATA(cmsg)) = gso_size;
+
+    return Api::SysCallSizeResult{4500u, 0};
+  }));
 
   EXPECT_CALL(listener_callbacks_, onReadReady());
   EXPECT_CALL(listener_callbacks_, onData(_))

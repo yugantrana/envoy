@@ -1,5 +1,7 @@
 #include "common/network/io_socket_handle_impl.h"
 
+#include <iostream> // TODO: YUGANT: Remove it, just for using cout
+
 #include "envoy/buffer/buffer.h"
 
 #include "common/api/os_sys_calls_impl.h"
@@ -7,9 +9,6 @@
 
 #include "absl/container/fixed_array.h"
 #include "absl/types/optional.h"
-
-
-#include <iostream> // TODO: YUGANT: Remove it, just for using cout
 
 using Envoy::Api::SysCallIntResult;
 using Envoy::Api::SysCallSizeResult;
@@ -253,10 +252,11 @@ Api::IoCallUint64Result IoSocketHandleImpl::recvmsg(Buffer::RawSlice* slices,
     // Get overflow, local address from control message.
     for (struct cmsghdr* cmsg = CMSG_FIRSTHDR(&hdr); cmsg != nullptr;
          cmsg = CMSG_NXTHDR(&hdr, cmsg)) {
-    
-      std::cout<< "YUGANT: cmsg_level(17):" << cmsg->cmsg_level << " cmsg_type(104):" << cmsg->cmsg_type << std::endl;
+
+      std::cout << "YUGANT: cmsg_level(17):" << cmsg->cmsg_level
+                << " cmsg_type(104):" << cmsg->cmsg_type << std::endl;
       if (output.msg_[0].local_address_ == nullptr) {
-        std::cout << "YUGANT; Local addr is a nullptr."<< std::endl;
+        std::cout << "YUGANT; Local addr is a nullptr." << std::endl;
         Address::InstanceConstSharedPtr addr = maybeGetDstAddressFromHeader(*cmsg, self_port, fd_);
         if (addr != nullptr) {
           std::cout << "YUGANT: Got an addr: " << addr << std::endl;
@@ -273,7 +273,7 @@ Api::IoCallUint64Result IoSocketHandleImpl::recvmsg(Buffer::RawSlice* slices,
       }
 
       if (cmsg->cmsg_level == SOL_UDP && cmsg->cmsg_type == GRO_UDP) {
-        std::cout<< "YUGANT: UDP GRO is being set!" << std::endl;
+        std::cout << "YUGANT: UDP GRO is being set!" << std::endl;
         output.msg_[0].gso_size_ = *reinterpret_cast<uint16_t*>(CMSG_DATA(cmsg));
       }
     }
