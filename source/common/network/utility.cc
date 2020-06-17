@@ -559,11 +559,19 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
                                                 UdpPacketProcessor& udp_packet_processor,
                                                 MonotonicTime receive_time,
                                                 uint32_t* packets_dropped) {
+  
   // TODO(yugant)
+  std::cout<<"YUGANT RANA: readFromSocket called" << std::endl;
+  
   if (handle.supportsUdpGro()) {
+    std::cout<<"RANA YUGANT: supportsGRO IS True" << std::endl;
+
     Buffer::InstancePtr buffer = std::make_unique<Buffer::OwnedImpl>();
     Buffer::RawSlice slice;
-    const uint64_t num_slices = buffer->reserve(udp_packet_processor.maxPacketSize(), &slice, 1);
+    // Yugant see if you can find a place for this constant
+    const uint64_t maxPacketSizeWithGro = 65535;
+    const uint64_t num_slices = buffer->reserve(maxPacketSizeWithGro, &slice, 1);
+    // const uint64_t num_slices = buffer->reserve(udp_packet_processor.maxPacketSize(), &slice, 1);
     ASSERT(num_slices == 1u);
 
     IoHandle::RecvMsgOutput output(1, packets_dropped);
@@ -577,34 +585,53 @@ Api::IoCallUint64Result Utility::readFromSocket(IoHandle& handle,
 
     ENVOY_LOG_MISC(trace, "recvmsg bytes {}", result.rc_);
 
+    std::cout<<"YUGANT: gso_size read is:" << output.msg_[0].gso_size_ << std::endl;
+    std::cout<<"YUGANT: slice.mem_ is:" << slice.mem_ << std::endl;
+    std::cout<<"YUGANT: buffer is:" << buffer->toString() << std::endl;
+
     // Get gso_size
     if (output.msg_[0].gso_size_ == 0u) {
       // skip gso segmentation and proceed
       // PRINT_WARNING
+      // output.msg_[0].gso_size_ = 7u;
       passPayloadToProcessor(
           result.rc_, slice, std::move(buffer), std::move(output.msg_[0].peer_address_),
           std::move(output.msg_[0].local_address_), udp_packet_processor, receive_time);
       return result;
     }
 
+    std::cout<<"YUGANT: slice is:" << *reinterpret_cast<char *>(slice.mem_) << std::endl;
+
     // Segment the buffer into gso_sized buffers
-    // Not Worrying about not being a multiple of gso_size | TODO(yugant): maybe worry
-    for (uint64_t bytes_to_skip = 0; bytes_to_skip < (slice.len_ - output.msg_[0].gso_size_);
+    for (uint64_t bytes_to_skip = 0; bytes_to_skip < (slice.len_);
          bytes_to_skip += output.msg_[0].gso_size_) {
+      
       Buffer::InstancePtr sub_buffer = std::make_unique<Buffer::OwnedImpl>();
       Buffer::RawSlice sub_slice;
       const uint64_t num_slices =
-          sub_buffer->reserve(udp_packet_processor.maxPacketSize(), &sub_slice, 1);
+          sub_buffer->reserve(maxPacketSizeWithGro, &sub_slice, 1);
       ASSERT(num_slices == 1u);
 
-      memcpy(&sub_slice.mem_, (&slice.mem_) + bytes_to_skip,
-             output.msg_[0].gso_size_); // copy contents of slice[i:i+gso_size] to new_slice;
+      std::cout<<"YUGANT: THIS WAS IN" << std::endl;
+      std::cout<<"YUGANT: sub_slice.mem_ is:" << sub_slice.mem_ << std::endl;
+      // YUGANT: Should try to remove the copy, maybe change passPayloadToProcessor
+      memcpy( sub_slice.mem_, static_cast<char*>(slice.mem_) + bytes_to_skip, 
+              output.msg_[0].gso_size_); // copy contents of slice[i:i+gso_size] to new_slice;
+
+      std::cout<<"YUGANT: THIS WAS OUT" << std::endl;
+      
+      if (output.msg_[0].local_address_ == nullptr) {
+        std::cout<<"YUGANT: Still NULL" << std::endl;
+      }
+
       passPayloadToProcessor(
           result.rc_, sub_slice, std::move(sub_buffer), std::move(output.msg_[0].peer_address_),
           std::move(output.msg_[0].local_address_), udp_packet_processor, receive_time);
     }
 
     return result;
+  } else {
+    std::cout<<"RANA YUGANT: supportsGRO IS False" << std::endl;
   }
 
   if (handle.supportsMmsg()) {

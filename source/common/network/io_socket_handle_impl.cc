@@ -8,6 +8,9 @@
 #include "absl/container/fixed_array.h"
 #include "absl/types/optional.h"
 
+
+#include <iostream> // TODO: YUGANT: Remove it, just for using cout
+
 using Envoy::Api::SysCallIntResult;
 using Envoy::Api::SysCallSizeResult;
 
@@ -245,13 +248,18 @@ Api::IoCallUint64Result IoSocketHandleImpl::recvmsg(Buffer::RawSlice* slices,
                  fmt::format("Unable to get remote address from recvmsg() for fd: {}", fd_));
   output.msg_[0].peer_address_ = getAddressFromSockAddrOrDie(peer_addr, hdr.msg_namelen, fd_);
 
+  std::cout << "YUGANT;; fd in io_sock is: " << fd_ << std::endl;
   if (hdr.msg_controllen > 0) {
     // Get overflow, local address from control message.
     for (struct cmsghdr* cmsg = CMSG_FIRSTHDR(&hdr); cmsg != nullptr;
          cmsg = CMSG_NXTHDR(&hdr, cmsg)) {
+    
+      std::cout<< "YUGANT: cmsg_level(17):" << cmsg->cmsg_level << " cmsg_type(104):" << cmsg->cmsg_type << std::endl;
       if (output.msg_[0].local_address_ == nullptr) {
+        std::cout << "YUGANT; Local addr is a nullptr."<< std::endl;
         Address::InstanceConstSharedPtr addr = maybeGetDstAddressFromHeader(*cmsg, self_port, fd_);
         if (addr != nullptr) {
+          std::cout << "YUGANT: Got an addr: " << addr << std::endl;
           // This is a IP packet info message.
           output.msg_[0].local_address_ = std::move(addr);
           continue;
@@ -265,6 +273,7 @@ Api::IoCallUint64Result IoSocketHandleImpl::recvmsg(Buffer::RawSlice* slices,
       }
 
       if (cmsg->cmsg_level == SOL_UDP && cmsg->cmsg_type == GRO_UDP) {
+        std::cout<< "YUGANT: UDP GRO is being set!" << std::endl;
         output.msg_[0].gso_size_ = *reinterpret_cast<uint16_t*>(CMSG_DATA(cmsg));
       }
     }
