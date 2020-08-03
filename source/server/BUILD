@@ -431,6 +431,7 @@ envoy_cc_library(
         "//source/common/local_info:local_info_lib",
         "//source/common/memory:heap_shrinker_lib",
         "//source/common/memory:stats_lib",
+        "//source/common/network:udp_packet_writer_handler_lib",
         "//source/common/protobuf:utility_lib",
         "//source/common/router:rds_lib",
         "//source/common/runtime:runtime_lib",

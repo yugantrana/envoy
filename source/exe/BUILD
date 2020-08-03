@@ -25,6 +25,18 @@ envoy_cc_binary(
     deps = [":envoy_main_entry_lib"],
 )
 
+envoy_cc_binary(
+    name = "envoy-static-gso",
+    stamped = True,
+    deps = [
+        "envoy_main_entry_lib",
+        "//source/extensions/quic_listeners/quiche:active_quic_listener_config_lib",
+        "//source/extensions/quic_listeners/quiche:codec_lib",
+        "//source/extensions/quic_listeners/quiche:quic_transport_socket_factory_lib",
+        "//source/extensions/quic_listeners/quiche:udp_gso_batch_writer_config_lib",
+    ],
+)
+
 envoy_cc_library(
     name = "envoy_common_lib",
     deps = [

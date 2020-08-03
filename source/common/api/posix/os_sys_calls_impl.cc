@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <linux/version.h> // To Check Version
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -100,6 +101,10 @@ bool OsSysCallsImpl::supportsUdpGso() const {
   return false;
 #else
 #ifndef UDP_SEGMENT
+  ENVOY_LOG_MISC(trace, "GSO_PERF: UDP SEGMENT is not defined");
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0))
+  ENVOY_LOG_MISC(trace, "GSO_PERF: Kernel Version < 4.18");
+#endif
   return false;
 #else
   static const bool is_supported = [] {
@@ -113,6 +118,7 @@ bool OsSysCallsImpl::supportsUdpGso() const {
     ::close(fd);
     return result;
   }();
+  ENVOY_LOG_MISC(trace, "GSO_PERF: GSO support {}", is_supported ? "PRESENT" : "ABSENT");
   return is_supported;
 #endif
 #endif

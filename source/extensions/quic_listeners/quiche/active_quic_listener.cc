@@ -119,6 +119,7 @@ void ActiveQuicListener::onReadReady() {
 }
 
 void ActiveQuicListener::onWriteReady(const Network::Socket& /*socket*/) {
+  ENVOY_LOG_MISC(trace, "GSO_PERF: Quic Listener On Can Write Called");
   quic_dispatcher_->OnCanWrite();
 }
 

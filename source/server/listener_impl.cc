@@ -380,8 +380,13 @@ void ListenerImpl::buildUdpWriterFactory(Network::Socket::Type socket_type) {
   if (socket_type == Network::Socket::Type::Datagram) {
     auto udp_writer_config = config_.udp_writer_config();
     if (!Api::OsSysCallsSingleton::get().supportsUdpGso() || udp_writer_config.name().empty()) {
+      if (!Api::OsSysCallsSingleton::get().supportsUdpGso()) {
+        ENVOY_LOG_MISC(trace,
+                       "GSO_PERF: Resetting UdpDefault Writer Name Because of lacking support");
+      }
       udp_writer_config.set_name(Network::UdpWriterNames::get().DefaultWriter);
     }
+    ENVOY_LOG_MISC(trace, "GSO_PERF: batch writer name is {}", udp_writer_config.name());
     auto& config_factory =
         Config::Utility::getAndCheckFactoryByName<Network::UdpPacketWriterConfigFactory>(
             udp_writer_config.name());

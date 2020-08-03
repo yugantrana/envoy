@@ -52,7 +52,9 @@ Api::IoCallUint64Result convertQuicWriteResult(quic::WriteResult quic_result, si
 // Initialize QuicGsoBatchWriter, set io_handle_ and stats_
 UdpGsoBatchWriter::UdpGsoBatchWriter(Network::IoHandle& io_handle, Stats::Scope& scope)
     : quic::QuicGsoBatchWriter(std::make_unique<quic::QuicBatchWriterBuffer>(), io_handle.fd()),
-      stats_(generateStats(scope)) {}
+      stats_(generateStats(scope)) {
+  ENVOY_LOG_MISC(trace, "GSO_PERF: GSO Batch writer initialized");
+}
 
 // Do Nothing in the Destructor For now
 UdpGsoBatchWriter::~UdpGsoBatchWriter() = default;
@@ -60,6 +62,7 @@ UdpGsoBatchWriter::~UdpGsoBatchWriter() = default;
 Api::IoCallUint64Result
 UdpGsoBatchWriter::writePacket(const Buffer::Instance& buffer, const Network::Address::Ip* local_ip,
                                const Network::Address::Instance& peer_address) {
+  ENVOY_LOG_MISC(trace, "GSO_PERF: GSO Batch writer writePacket called");
   // Convert received parameters to relevant forms
   quic::QuicSocketAddress peer_addr = envoyAddressIpToQuicSocketAddress(peer_address.ip());
   quic::QuicSocketAddress self_addr = envoyAddressIpToQuicSocketAddress(local_ip);
@@ -70,9 +73,20 @@ UdpGsoBatchWriter::writePacket(const Buffer::Instance& buffer, const Network::Ad
   quic::WriteResult quic_result =
       WritePacket(buffer.toString().c_str(), payload_len, self_addr.host(), peer_addr,
                   /*quic::PerPacketOptions=*/nullptr);
-  updateUdpGsoBatchWriterStats(quic_result);
 
   return convertQuicWriteResult(quic_result, payload_len);
+}
+
+quic::WriteResult UdpGsoBatchWriter::WritePacket(const char* buffer, size_t buf_len,
+                                                 const quic::QuicIpAddress& self_address,
+                                                 const quic::QuicSocketAddress& peer_address,
+                                                 quic::PerPacketOptions* options) {
+  ENVOY_LOG_MISC(trace, "GSO_PERF: Calling the overriden WritePacket in GsoWriter");
+  quic::WriteResult quic_result =
+      quic::QuicGsoBatchWriter::WritePacket(buffer, buf_len, self_address, peer_address, options);
+  ENVOY_LOG_MISC(trace, "GSO_PERF: Completed the Write here!");
+  updateUdpGsoBatchWriterStats(quic_result);
+  return quic_result;
 }
 
 uint64_t UdpGsoBatchWriter::getMaxPacketSize(const Network::Address::Instance& peer_address) const {

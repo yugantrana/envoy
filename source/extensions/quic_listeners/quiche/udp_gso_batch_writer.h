@@ -84,6 +84,12 @@ public:
    */
   UdpGsoBatchWriterStats generateStats(Stats::Scope& scope);
 
+  // Override Quic WritePacket
+  quic::WriteResult WritePacket(const char* buffer, size_t buf_len,
+                                const quic::QuicIpAddress& self_address,
+                                const quic::QuicSocketAddress& peer_address,
+                                quic::PerPacketOptions* options) override;
+
 private:
   UdpGsoBatchWriterStats stats_;
 };
