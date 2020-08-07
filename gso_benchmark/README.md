@@ -38,9 +38,9 @@
        For Gso:
        `CPUPROFILE=/tmp/gso_run.cpuprof ../bazel-bin/source/exe/envoy-static-gso --concurrency 1 --disable-hot-restart -c configs/gso_quic_google_com_proxy.v2.yaml`
     
-    2. python3 run_quic_clients.py, from a separate terminal
+    2. `python3 run_quic_clients.py`, from a separate terminal
     
-    3. Kill the Envoy server and add analyze the .cpuprof
+    3. Once all quic clients are served, kill the envoy server and analyze the .cpuprof
 
        For Default:
        `pprof -text bazel-bin/source/exe/envoy-static-gso /tmp/default_run.cpuprof | less`
