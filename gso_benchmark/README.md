@@ -23,20 +23,20 @@
     - Final output will show Max and Avg CPU util of the envoy server on completion.
 
 # Methods For Testing Performance
-- Monitoring psutil CPU utilization for the Envoy Process
+- Monitoring psutil CPU utilization for the Envoy Process, run from `../`
 
-    `python3 run_benchmark.py "gso"`
+    `python3 gso_benchmark/run_benchmark.py "gso"`
     
-    `python3 run_benchmark.py "default"`
+    `python3 gso/benchmark/run_benchmark.py "default"`
 
 - CPU-Profiling using PPROF
     1. Run Envoy Server By Saving CPU profile as
        
        For Default:
-       `CPUPROFILE=/tmp/default_run.cpuprof ../bazel-bin/source/exe/envoy-static-gso --concurrency 1 --disable-hot-restart -c configs/default_quic_google_com_proxy.v2.yaml`
+       `CPUPROFILE=/tmp/default_run.cpuprof ../bazel-bin/source/exe/envoy-static-gso --concurrency 1 --disable-hot-restart -c ../configs/default_quic_google_com_proxy.v2.yaml`
        
        For Gso:
-       `CPUPROFILE=/tmp/gso_run.cpuprof ../bazel-bin/source/exe/envoy-static-gso --concurrency 1 --disable-hot-restart -c configs/gso_quic_google_com_proxy.v2.yaml`
+       `CPUPROFILE=/tmp/gso_run.cpuprof ../bazel-bin/source/exe/envoy-static-gso --concurrency 1 --disable-hot-restart -c ../configs/gso_quic_google_com_proxy.v2.yaml`
     
     2. `python3 run_quic_clients.py`, from a separate terminal
     
@@ -49,7 +49,7 @@
        `pprof -text bazel-bin/source/exe/envoy-static-gso /tmp/gso_run.cpuprof | less`
  
  # Pre-Requisites
- - You would like to modify `configs/default_quic_google_com_proxy.v2.yaml` and `configs/gso_quic_google_com_proxy.v2.yaml`
+ - You would like to modify `../configs/default_quic_google_com_proxy.v2.yaml` and `../configs/gso_quic_google_com_proxy.v2.yaml`
     - Changing `/usr/local/google/home/yugant/github/gso_change/perf_envoy_gso/` to path to your repository.
     - Changing `filename: "/usr/local/google/home/yugant/getfile/myfile.log"` to path of the file that you want to return as response from server.
 
