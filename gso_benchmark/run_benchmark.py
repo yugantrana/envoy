@@ -9,5 +9,5 @@ if __name__ == "__main__":
                                      homepath+"gso_benchmark/run_envoy.py",
                                      mode])
     quic_clients_script = subprocess.Popen(["python3",
-                                            homepath+"gso_benchmark/run_quic_clients.py",
+                                            homepath+"gso_benchmark/run_quic_clients_with_envoy.py",
                                             str(envoy_script.pid)])

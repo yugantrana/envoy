@@ -4,8 +4,9 @@ import sys
 import time
 
 class QuicClientConnections:
-    def __init__(self, num_clients):
+    def __init__(self, num_clients, run_envoy_pid):
         self.num_clients = num_clients
+        self.run_envoy_pid = run_envoy_pid
         self.running_time = 0.0
     
     def spawn_quic_client(self):
@@ -35,8 +36,14 @@ class QuicClientConnections:
         self.running_time = end_time - start_time
 
 if __name__ == "__main__":
-    num_clients = 50 if len(sys.argv) < 2 else sys.argv[1]
-    quic_connections =  QuicClientConnections(num_clients)
+    if len(sys.argv) < 2:
+        print("Provide Envoy Script PID... Exiting!")
+        exit(1)
+    run_envoy_pid = int(sys.argv[1])
+    num_clients = 50 if len(sys.argv) < 3 else sys.argv[2]
+    quic_connections =  QuicClientConnections(num_clients, run_envoy_pid)
     quic_connections.run_and_terminate()
     print("Final Stats while running", num_clients,"Quic Connections",
           "\n  Running Time:\t", quic_connections.running_time)
+    # Send SIGINT to Envoy Server When all Clients are done 
+    os.kill(quic_connections.run_envoy_pid, signal.SIGINT)
